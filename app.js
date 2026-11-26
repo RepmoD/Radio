@@ -129,9 +129,9 @@ function setCatalog(list) {
   const seen = new Set(); S.cat = []; S.byId = new Map();
   for (const g of list) {
     if (!g.y) continue;
-    const k = gameKey(g);
-    if (seen.has(k)) continue;
-    seen.add(k); S.cat.push(g); S.byId.set(g.id, g);
+    const k = gameKey(g), k2 = g.mo && g.len ? [g.y, g.mo, g.d, Math.round(g.len / 5)].join('|') : '';
+    if (seen.has(k) || (k2 && seen.has(k2))) continue;
+    seen.add(k); if (k2) seen.add(k2); S.cat.push(g); S.byId.set(g.id, g);
   }
   S.cat.sort((a, b) => (a.y - b.y) || (a.mo - b.mo) || (a.d - b.d) || a.title.localeCompare(b.title));
 }
@@ -498,7 +498,7 @@ function render(soft) {
       if (!list.length && !rows) rows = '<li class="empty">' + (S.loading ? 'Warming up the tubes… loading the archive.' : S.failed ? 'Couldn’t reach archive.org just now. The FM band still works.' : v.kind === 'year' ? 'No games from ' + v.y + ' in the big collections. Checking other uploads below.' : 'No games match that here.') + '</li>';
       const key = v.kind === 'year' ? 'y' + v.y : v.kind === 'search' ? 's' + v.q.toLowerCase() : '';
       const ex = key && S.extra[key];
-      if (ex && ex.length) more = '<div class="sub">More archive.org uploads</div><ol class="list">' + ex.map(rowHtml).join('') + '</ol>';
+      if (Array.isArray(ex) && ex.length) more = '<div class="sub">More archive.org uploads</div><ol class="list">' + ex.map(rowHtml).join('') + '</ol>';
       else if (ex === 'wait') more = '<p class="note">Checking other archive.org uploads…</p>';
       if (v.kind === 'search') more += '<p class="note"><a href="https://www.youtube.com/results?search_query=' + encodeURIComponent(cleanQ(v.q) + ' baseball radio broadcast') + '">Look for “' + esc(v.q) + '” on YouTube</a> (opens the YouTube app).</p>';
       if (v.kind === 'year' && list.length >= 5) more = '<p class="note"><button class="addann" id="season">▶ Play the ' + v.y + ' games in order</button></p>' + more;

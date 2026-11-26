@@ -70,7 +70,7 @@ function parseName(base) {
   if (mo < 1 || mo > 12 || d < 1 || d > 31) { mo = 0; d = 0; }
   rest = rest.replace(/(^|•)\s*[A-Z]{3}\s[A-Z]{3}\s*•/g, '').replace(/\bWS\b/g, 'World Series').replace(/•/g, '-').replace(/\bG(?:m|ame)?\s*(\d)\b/g, 'Game $1').replace(/\s+-\s+Radio$/i, '').replace(/\bclassic (radio )?baseball( radio)?\b/ig, '').replace(/\bcomplete (mlb )?broadcast\b/ig, '');
   let title = rest.replace(/^[\s\-–]+/, '').replace(/complete radio (baseball )?broadcast/ig, '').replace(/radio broadcast/ig, '')
-    .replace(/\bcopy\b/ig, '').replace(/\s{2,}/g, ' ').replace(/[\s\-–]+$/, '').trim();
+    .replace(/\bcopy\b/ig, '').replace(/\s{2,}/g, ' ').replace(/[\s\-–]+$/, '').replace(/\s+baseball$/i, '').trim();
   if (!title) title = b;
   return {y, mo, d, title};
 }
@@ -140,7 +140,7 @@ const unpack = a => ({kind:'am', id:a[0] + '/' + a[1], ident:a[0], file:a[1], y:
 
 async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
 async function loadCatalog(force) {
-  const cached = ld('cat3', null);
+  const cached = ld('cat4', null);
   if (cached && cached.items && cached.items.length) {
     setCatalog(cached.items.map(unpack)); S.loading = false;
     if (!force && Date.now() - cached.at < 7 * 864e5) return;
@@ -150,7 +150,7 @@ async function loadCatalog(force) {
   res.forEach(r => { if (r.status === 'fulfilled') all.push(...r.value); });
   if (!all.length) { S.loading = false; if (!S.cat.length) S.failed = true; render(); return; }
   setCatalog(all); S.loading = false; S.failed = false;
-  sv('cat3', {at:Date.now(), items:S.cat.map(pack)});
+  sv('cat4', {at:Date.now(), items:S.cat.map(pack)});
   buildDial(); render();
 }
 

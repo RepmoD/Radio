@@ -47,7 +47,7 @@ function parseName(base) {
   if (!title) title = b;
   return {y, mo, d, title};
 }
-const ALIAS = [[/\bbuck\b/i, /cardinal|shannon|kmox|caray|buck &|& buck/i, 'Jack Buck'], [/\bshannon\b/i, /cardinal|buck|kmox/i, 'Mike Shannon'], [/\bcaray\b/i, null, 'Harry Caray'], [/\bscully\b/i, null, 'Vin Scully'], [/\bharwell\b/i, null, 'Ernie Harwell'], [/\bgaragiola\b/i, null, 'Joe Garagiola'], [/\brizzuto\b/i, null, 'Phil Rizzuto'], [/\bbrickhouse\b/i, null, 'Jack Brickhouse']];
+const ALIAS = [[/\bbuck\b/i, /cardinal|shannon|kmox|caray|buck &|& buck/i, 'Jack Buck'], [/\bshannon\b/i, /cardinal|buck|kmox/i, 'Mike Shannon'], [/\bcaray\b/i, null, 'Harry Caray'], [/\bscully\b/i, null, 'Vin Scully'], [/\bharwell\b/i, null, 'Ernie Harwell'], [/\bgaragiola\b/i, null, 'Joe Garagiola'], [/\brizzuto\b/i, null, 'Phil Rizzuto'], [/\bbrickhouse\b/i, null, 'Jack Brickhouse'], [/\bmichaels\b/i, null, 'Al Michaels'], [/\bnuxhall\b/i, null, 'Joe Nuxhall'], [/\bbrennaman\b/i, null, 'Marty Brennaman'], [/\bkalas\b/i, null, 'Harry Kalas'], [/\buecker\b/i, null, 'Bob Uecker'], [/\bniehaus\b/i, null, 'Dave Niehaus'], [/\bgowdy\b/i, null, 'Curt Gowdy']];
 function annsIn(text) {
   const t = text.toLowerCase(), out = ANNOUNCERS.filter(a => t.includes(a.toLowerCase()));
   ALIAS.forEach(([re, cond, name]) => { if (re.test(text) && (!cond || cond.test(text))) out.push(name); });
@@ -181,7 +181,7 @@ function stopYT() { if (S.yt && S.yt.pauseVideo) { try { S.yt.pauseVideo(); } ca
 function playAM(g, from) {
   stopYT(); $('ytWrap').hidden = true;
   if (S.cur && S.cur.kind !== 'yt' && !S.delay) savePos();
-  S.cur = g; S.delay = null; if (g.kind !== 'ad') remember(g);
+  S.cur = g; S.delay = null; if (g.kind !== 'ad') { remember(g); setBandQuiet('am'); if (g.y) dialTo(g.y, true); }
   setOn(true);
   const start = from != null ? from : resumeAt(g.id);
   au.src = fileUrl(g.ident, g.file);
@@ -224,11 +224,13 @@ function loadYTApi() {
 async function playYT(g, from) {
   // g: {kind:'yt', station, list, vid?, index?, random?}
   if (S.cur && S.cur.kind !== 'yt') savePos();
-  au.pause(); S.delay = null; setOn(true);
+  au.pause(); S.delay = null; setOn(true); setPlaying(false); setBandQuiet('fm');
+  $('tCur').textContent = '0:00'; $('tDur').textContent = '--:--'; $('seek').value = 0; $('seek').style.setProperty('--p', '0%');
   $('ytWrap').hidden = false;
+  clearTimeout(playYT.hint); playYT.hint = setTimeout(() => { if (S.cur && S.cur.kind === 'yt' && !(S.yt && S.yt.getPlayerState && S.yt.getPlayerState() === 1)) toast('If it doesn’t start, tap the video once. YouTube sometimes wants its own tap.'); }, 7000);
   const st = STATIONS.find(s => s.key === g.station) || STATIONS[0];
   S.cur = {kind:'yt', id:g.vid ? 'yt:' + g.vid : 'st:' + st.key, station:st.key, list:st.list, vid:g.vid, title:g.title || st.label, y:g.y, ann:st.ann ? [st.ann] : [], col:'YouTube · Retro Sports Radio'};
-  showNow(); render(true);
+  showNow(); render(true); dialTo(st.key, true);
   const start = from != null ? from : (g.vid ? resumeAt('yt:' + g.vid) : 0);
   S.ytWant = {random:!!g.random && !g.vid};
   try { await loadYTApi(); } catch (e) { toast('YouTube didn’t answer. Check the connection and try again.'); return; }
@@ -495,7 +497,7 @@ $('dial').addEventListener('click', e => {
 });
 
 function setView(v) {
-  S.view = v; S.season = false;
+  S.view = v; S.season = false; if (v.kind !== 'search') $('q').value = '';
   document.querySelectorAll('.key').forEach(k => k.classList.toggle('on', k.dataset.k === v.preset));
   render();
   const key = v.kind === 'year' ? 'y' + v.y : v.kind === 'search' ? 's' + v.q.toLowerCase() : '';
@@ -524,7 +526,7 @@ const PRESETS = [
   {k:'spin', label:'Spin', run(){ spin(); }},
   {k:'delay', label:'Rain delay', run(){ rainDelay(); }}
 ];
-function setBandQuiet(b) { if (S.band !== b) { S.band = b; $('bAM').classList.toggle('sel', b === 'am'); $('bFM').classList.toggle('sel', b === 'fm'); buildDial(); } }
+function setBandQuiet(b) { if (S.band !== b) { S.band = b; dialQuiet = Date.now() + 900; $('bAM').classList.toggle('sel', b === 'am'); $('bFM').classList.toggle('sel', b === 'fm'); buildDial(); } }
 $('presets').innerHTML = PRESETS.map(p => '<button class="key" data-k="' + p.k + '">' + p.label + '</button>').join('');
 $('presets').addEventListener('click', e => { const b = e.target.closest('.key'); if (!b) return; const p = PRESETS.find(x => x.k === b.dataset.k); if (p) { setOn(true); p.run(); } });
 

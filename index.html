@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;600&family=Limelight&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body class="off">
 <div class="wrap">
@@ -26,52 +26,56 @@
       <div class="readout" aria-live="polite">
         <div class="r-date" id="rDate"><span class="onair"></span>Off the air</div>
         <div class="r-title" id="rTitle">Tap the power knob</div>
-        <div class="r-meta" id="rMeta">A game starts playing. Swipe the dial or press a key to switch.</div>
+        <div class="r-meta" id="rMeta">Turn the red Power knob and a game starts. Swipe the dial for another year, or press a key below.</div>
+        <button class="nowstar" id="nowStar" hidden aria-pressed="false">☆ Star this game</button>
       </div>
       <div class="yt" id="ytWrap" hidden><div id="yt"></div></div>
     </div>
 
-    <div class="dialwin"><div class="dial" id="dial" role="listbox" aria-label="Tuning dial"></div><div class="needle"></div></div>
-    <div class="dialcap"><span id="capL">AM · archive.org</span><span id="capR">swipe to tune</span></div>
+    <div class="dialwin"><div class="dial" id="dial" role="listbox" aria-label="Tuning dial"></div><div class="needle"></div>
+      <button class="dstep l" id="dPrev" aria-label="Tune down">‹</button><button class="dstep r" id="dNext" aria-label="Tune up">›</button></div>
+    <div class="dialcap"><span id="capL">AM · archive.org</span><span id="capR">swipe to look, power on to play</span></div>
 
     <div class="controls">
       <button class="knob power" id="power" aria-label="Power on">
         <svg viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>
-        <span class="lbl">Power</span>
+        <span class="lbl" id="powLbl">Turn on</span>
       </button>
       <div class="transport">
-        <button class="tbtn" id="back" aria-label="Back 30 seconds">−30</button>
+        <button class="tbtn" id="back" aria-label="Back 30 seconds">−30<small>sec</small></button>
         <button class="tbtn big" id="play" aria-label="Play">
           <svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
           <svg id="icoPause" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>
         </button>
-        <button class="tbtn" id="fwd" aria-label="Ahead 30 seconds">+30</button>
+        <button class="tbtn" id="fwd" aria-label="Ahead 30 seconds">+30<small>sec</small></button>
       </div>
       <button class="knob band" id="band" aria-label="Switch band">
         <span><i id="bAM" class="sel">AM</i><i id="bFM">FM</i></span>
-        <span class="lbl">Band</span>
+        <span class="lbl">AM / FM</span>
       </button>
     </div>
 
     <div class="scrub"><span id="tCur">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Position in game"><span id="tDur">0:00</span></div>
 
+    <div class="keycap">Stations: press a key to play</div>
     <div class="presets" id="presets"></div>
   </section>
 
   <section class="log">
     <div class="callbar" id="callbar"></div>
+    <label class="slabel" for="q">Find a game</label>
     <form id="sform" class="annform" role="search">
-      <input type="search" id="q" placeholder="Search teams, dates, announcers" autocomplete="off" enterkeyhint="search" aria-label="Search games">
-      <button class="go" type="submit">Find</button>
+      <input type="search" id="q" placeholder="Cardinals 1985, Buck, World Series…" autocomplete="off" enterkeyhint="search">
+      <button class="go" type="submit">Search</button>
     </form>
     <div class="loghead"><h2 id="lTitle">Tuning in</h2><span id="lCount"></span></div>
     <ol class="list" id="list"></ol>
     <div id="more"></div>
-    <p class="foot">AM plays games streamed from the <a href="https://archive.org/details/cbotrarchive">Internet Archive</a>, mostly 1934 to 1974 there. FM plays full-game radio uploads on YouTube from the Retro Sports Radio channel, where many of the later games live. Your spot in each game, stars and favorite announcers stay on this phone.</p>
+    <p class="foot">AM streams games from the <a href="https://archive.org/details/cbotrarchive">Internet Archive</a>, from the 1930s through 1989, including Tigers, Blue Jays, Mariners and World Series radio. FM plays full-game radio uploads on YouTube from the Retro Sports Radio and Classic Baseball on the Radio channels. Tap ☆ to keep a game, ♡ to favor an announcer. Your spot in each game, stars and favorite announcers stay on this phone.</p>
   </section>
 </div>
 <audio id="au" preload="none" playsinline></audio>
 <div class="toast" id="toast" hidden></div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

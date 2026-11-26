@@ -159,7 +159,7 @@ function cleanQ(q) { return q.replace(/[^\p{L}\p{N}\s'\-]/gu, ' ').replace(/\s+/
 async function iaSearch(term, year) {
   const skip = COLLECTIONS.map(c => c.id).join(' OR ');
   let q = '(baseball OR "world series" OR "all-star game") AND mediatype:(audio OR movies) AND NOT identifier:(' + skip + ')';
-  if (term) q = '(' + term + ') AND ' + q;
+  q = (term ? '(' + term + ') AND ' : '(title:radio OR subject:radio) AND ') + q;
   if (year) q += ' AND (year:' + year + ' OR title:' + year + ')';
   const p = new URLSearchParams({q, rows:'40', output:'json'});
   ['identifier', 'title', 'year', 'date', 'mediatype'].forEach(f => p.append('fl[]', f));

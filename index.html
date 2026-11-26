@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ballgame Radio</title>
+<meta name="description" content="Old baseball radio broadcasts on a vintage dial.">
+<meta name="theme-color" content="#1d130d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ballgame">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;600&family=Limelight&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body class="off">
+<div class="wrap">
+  <section class="cab" aria-label="Radio">
+    <div class="plate"><span class="brand">Ballgame<small>radio</small></span></div>
+    <div class="grille">
+      <div class="readout" aria-live="polite">
+        <div class="r-date" id="rDate"><span class="onair"></span>Off the air</div>
+        <div class="r-title" id="rTitle">Tap the power knob</div>
+        <div class="r-meta" id="rMeta">A game starts playing. Swipe the dial or press a key to switch.</div>
+      </div>
+      <div class="yt" id="ytWrap" hidden><div id="yt"></div></div>
+    </div>
+
+    <div class="dialwin"><div class="dial" id="dial" role="listbox" aria-label="Tuning dial"></div><div class="needle"></div></div>
+    <div class="dialcap"><span id="capL">AM · archive.org</span><span id="capR">swipe to tune</span></div>
+
+    <div class="controls">
+      <button class="knob power" id="power" aria-label="Power on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>
+        <span class="lbl">Power</span>
+      </button>
+      <div class="transport">
+        <button class="tbtn" id="back" aria-label="Back 30 seconds">−30</button>
+        <button class="tbtn big" id="play" aria-label="Play">
+          <svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
+          <svg id="icoPause" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>
+        </button>
+        <button class="tbtn" id="fwd" aria-label="Ahead 30 seconds">+30</button>
+      </div>
+      <button class="knob band" id="band" aria-label="Switch band">
+        <span><i id="bAM" class="sel">AM</i><i id="bFM">FM</i></span>
+        <span class="lbl">Band</span>
+      </button>
+    </div>
+
+    <div class="scrub"><span id="tCur">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Position in game"><span id="tDur">0:00</span></div>
+
+    <div class="presets" id="presets"></div>
+  </section>
+
+  <section class="log">
+    <div class="callbar" id="callbar"></div>
+    <form id="sform" class="annform" role="search">
+      <input type="search" id="q" placeholder="Search teams, dates, announcers" autocomplete="off" enterkeyhint="search" aria-label="Search games">
+      <button class="go" type="submit">Find</button>
+    </form>
+    <div class="loghead"><h2 id="lTitle">Tuning in</h2><span id="lCount"></span></div>
+    <ol class="list" id="list"></ol>
+    <div id="more"></div>
+    <p class="foot">AM plays games streamed from the <a href="https://archive.org/details/cbotrarchive">Internet Archive</a>, mostly 1934 to 1974 there. FM plays full-game radio uploads on YouTube from the Retro Sports Radio channel, where many of the later games live. Your spot in each game, stars and favorite announcers stay on this phone.</p>
+  </section>
+</div>
+<audio id="au" preload="none" playsinline></audio>
+<div class="toast" id="toast" hidden></div>
+<script src="app.js?v=1"></script>
+</body>
+</html>

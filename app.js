@@ -5,6 +5,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 const ld = (k, d) => { try { const v = localStorage.getItem('br.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
 const sv = (k, v) => { try { localStorage.setItem('br.' + k, JSON.stringify(v)); } catch (e) {} };
 const IA = 'https://archive.org';
+const SHORT_MO = ['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
 const MONTHS = ['Jan.','Feb.','March','April','May','June','July','Aug.','Sept.','Oct.','Nov.','Dec.'];
 const DAYS = ['Sun.','Mon.','Tue.','Wed.','Thu.','Fri.','Sat.'];
 
@@ -145,7 +146,7 @@ function fmtDate(g) {
   if (g.y && g.mo && g.d) { const wd = new Date(Date.UTC(g.y, g.mo - 1, g.d)).getUTCDay(); return DAYS[wd] + ' ' + MONTHS[g.mo - 1] + ' ' + g.d + ', ' + g.y; }
   return g.y ? String(g.y) : '';
 }
-function short(g) { return g.mo && g.d ? MONTHS[g.mo - 1].replace('.', '') .slice(0, 4) + ' ' + g.d : (g.y || ''); }
+function short(g) { return g.mo && g.d ? SHORT_MO[g.mo - 1] + ' ' + g.d : (g.y || ''); }
 function hms(t) { t = Math.max(0, Math.floor(t || 0)); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); }
 function annsOf(g) { return [...new Set([...(annsIn(g.title || '')), ...(g.ann || []), ...(S.tags[g.id] || [])])]; }
 const isCards = g => /cardinal/i.test(g.title);

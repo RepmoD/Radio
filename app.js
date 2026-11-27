@@ -585,7 +585,7 @@ function rsExtra(title, d) {
   let t = ' ' + title.toLowerCase().replace(/[’`]/g, "'") + ' ';
   for (const [re, , n] of d.keys) t = t.replace(new RegExp(re.source, 'g'), (m, p) => p + ' ');
   for (const [re] of d.cities) t = t.replace(new RegExp(re.source, 'g'), (m, p) => p + ' ');
-  t = t.replace(/\b(at|vs?|versus|game\s*\d|g\d|doubleheader|dh|world series|nlcs|alcs|lcs|playoffs?|all[\s-]?stars?( game)?|restored|radio|broadcasts?|complete|full|mlb|baseball|the|and|new york|los angeles|chicago|st\.? louis|(18|19|20)\d\d)\b/g, ' ').replace(/[@()\[\]\-–—,.:;#&]+/g, ' ').replace(/\s+/g, ' ').trim();
+  t = t.replace(/\b(at|vs?|versus|game\s*\d|g\d|doubleheader|dh|world series|nlcs|alcs|lcs|playoffs?|all[\s-]?stars?( game)?|restored|radio|broadcasts?|complete|full|mlb|baseball|the|and|new york|los angeles|chicago|st\.? louis|brooklyn|kansas city|philadelphia|boston|pittsburgh|cincinnati|cleveland|detroit|baltimore|washington|milwaukee|houston|atlanta|minnesota|oakland|san francisco|montreal|san diego|seattle|texas|toronto|california|anaheim|otr|old time radio|vintage|(18|19|20)\d\d)\b/g, ' ').replace(/[@()\[\]\-–—,.:;#&]+/g, ' ').replace(/\s+/g, ' ').trim();
   if ((t.match(/[a-z]/g) || []).length < 4) return '';
   const orig = title.match(new RegExp(t.split(' ').map(reEsc).join('[^A-Za-z0-9]+'), 'i'));
   return orig ? orig[0] : t.replace(/\b\w/g, c => c.toUpperCase());

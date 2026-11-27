@@ -319,7 +319,8 @@ function ytState(e) {
     const d = S.yt.getVideoData ? S.yt.getVideoData() : null;
     if (d && d.video_id && S.cur && S.cur.kind === 'yt') {
       const y = +((d.title || '').match(/\b(19[2-9]\d)\b/) || [])[1] || 0;
-      Object.assign(S.cur, {id:'yt:' + d.video_id, vid:d.video_id, title:d.title || S.cur.title, y});
+      const pn = parseName(d.title || ''), md = pn.y === y && pn.mo ? {mo:pn.mo, d:pn.d} : {mo:0, d:0};
+      Object.assign(S.cur, {id:'yt:' + d.video_id, vid:d.video_id, title:d.title || S.cur.title, y}, md); delete S.cur.rsTried; delete S.cur.rs; delete S.cur.otitle; delete S.cur.omo; delete S.cur.od;
       remember(S.cur); showNow(); render(true);
       const r = resumeAt(S.cur.id);
       if (r && Math.abs(S.yt.getCurrentTime() - r) > 30 && !ytState.jumped) { ytState.jumped = S.cur.id; S.yt.seekTo(r, true); toast('Picking up at ' + hms(r)); }
@@ -574,11 +575,20 @@ function rsMatch(g, d) {
 }
 function rsTitle(x, d) {
   const T = c => d.t[c][0];
-  if (x[20] === 'AS') return 'All-Star Game, ' + T(x[2]).replace(' All-Stars', '') + ' at ' + T(x[3]).replace(' All-Stars', '');
+  if (x[20] === 'AS') return 'All-Star Game';
   let s = T(x[2]) + ' at ' + T(x[3]);
   if (x[20]) s += ' ' + RS_TYPE[x[20]] + (x[20] !== 'WC' ? ' Game ' + x[21] : '');
   else if (x[1]) s += ' (Game ' + x[1] + ')';
   return s;
+}
+function rsExtra(title, d) {
+  let t = ' ' + title.toLowerCase().replace(/[’`]/g, "'") + ' ';
+  for (const [re, , n] of d.keys) t = t.replace(new RegExp(re.source, 'g'), (m, p) => p + ' ');
+  for (const [re] of d.cities) t = t.replace(new RegExp(re.source, 'g'), (m, p) => p + ' ');
+  t = t.replace(/\b(at|vs?|versus|game\s*\d|g\d|doubleheader|dh|world series|nlcs|alcs|lcs|playoffs?|all[\s-]?stars?( game)?|restored|radio|broadcasts?|complete|full|mlb|baseball|the|and|new york|los angeles|chicago|st\.? louis|(18|19|20)\d\d)\b/g, ' ').replace(/[@()\[\]\-–—,.:;#&]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if ((t.match(/[a-z]/g) || []).length < 4) return '';
+  const orig = title.match(new RegExp(t.split(' ').map(reEsc).join('[^A-Za-z0-9]+'), 'i'));
+  return orig ? orig[0] : t.replace(/\b\w/g, c => c.toUpperCase());
 }
 function rsApply(g) {
   if (!g || !g.y || g.kind === 'ad' || g.rsTried === RS_V) return false;
@@ -586,7 +596,7 @@ function rsApply(g) {
   g.rsTried = RS_V;
   const x = rsMatch(g, d); if (!x) return false;
   if (g.otitle == null) { g.otitle = g.title; g.omo = g.mo; g.od = g.d; }
-  g.rs = x; g.mo = +x[0].slice(0, 2); g.d = +x[0].slice(2); g.title = rsTitle(x, d);
+  g.rs = x; g.mo = +x[0].slice(0, 2); g.d = +x[0].slice(2); g.title = rsTitle(x, d); const ex = rsExtra(g.otitle, d); if (ex) g.title += ' · ' + ex;
   return true;
 }
 function rsYear(y) {

@@ -505,6 +505,7 @@ function render(soft) {
     }
   }
   $('lCount').textContent = count; $('list').innerHTML = rows; $('more').innerHTML = more;
+  if (v.kind === 'year' && !S.loading && !(S.rs && v.y in S.rs)) rsYear(v.y).then(ch => { if (ch && S.view === v) render(true); });
   const sb = $('season'); if (sb) sb.onclick = () => { const l = viewList(); if (l.length) { S.season = true; play(l[0]); toast('Playing ' + S.view.y + ' in order. The next game starts when one ends.'); } };
   renderCall();
 }
@@ -520,14 +521,133 @@ function favAnnChips(skip) {
   const rest = S.annFav.filter(a => !(skip || []).includes(a));
   return rest.length ? '<span class="note" style="width:100%;margin:6px 0 0">Favorite voices: ' + rest.map(a => '<button class="addann" data-annview="' + esc(a) + '">' + esc(a) + '</button>').join(' ') + '</span>' : '';
 }
+/* ---------- Retrosheet box scores ---------- */
+const RS_V = 1;
+const RS_ALIAS = {Cardinals:['cards','redbirds'], Athletics:["a's", 'a s', 'as'], Pirates:['bucs'], Yankees:['yanks'], 'Blue Jays':['jays'], Indians:['tribe'], 'Colt .45s':['colt 45s', 'colt .45s', 'colts'], 'Devil Rays':['rays'], Phillies:['phils'], Senators:['nats']};
+const RS_TYPE = {WS:'World Series', NLLCS:'NLCS', ALLCS:'ALCS', NLDS:'NLDS', ALDS:'ALDS', WC:'Wild Card Game', AS:'All-Star Game'};
+S.rs = {}; S.box = {};
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function rsLoad(y) {
+  if (!y || y < 1934 || y > 2012) return Promise.resolve(null);
+  if (y in S.rs) return Promise.resolve(S.rs[y]);
+  if (!rsLoad.p) rsLoad.p = {};
+  if (!rsLoad.p[y]) rsLoad.p[y] = fetch('rs/' + y + '.json?v=' + RS_V).then(r => r.ok ? r.json() : null).catch(() => null)
+    .then(d => { if (d) rsPrep(d); S.rs[y] = d; return d; });
+  return rsLoad.p[y];
+}
+function rsPrep(d) {
+  d.byDate = {};
+  for (const x of d.g) (d.byDate[x[0]] = d.byDate[x[0]] || []).push(x);
+  const keys = [], cities = {};
+  for (const [c, [nick, city]] of Object.entries(d.t)) {
+    if (/^(ALS|NLS)$/.test(c)) continue;
+    for (const k of [nick.toLowerCase(), ...(RS_ALIAS[nick] || [])]) keys.push([k, c]);
+    const ck = city.toLowerCase(); (cities[ck] = cities[ck] || []).push(c);
+  }
+  keys.sort((a, b) => b[0].length - a[0].length);
+  d.keys = keys.map(([k, c]) => [new RegExp('(^|[^a-z])' + reEsc(k) + '(?=[^a-z]|$)'), c, k.length]);
+  d.cities = Object.entries(cities).filter(([k, cs]) => cs.length === 1).map(([k, cs]) => [new RegExp('(^|[^a-z])' + reEsc(k) + '(?=[^a-z]|$)'), cs[0]]);
+}
+function rsTeams(title, d) {
+  let t = ' ' + title.toLowerCase().replace(/[’`]/g, "'") + ' ';
+  const found = [];
+  for (const [re, c, n] of d.keys) { const m = t.match(re); if (m && !found.some(f => f.c === c)) { found.push({c, i:m.index}); t = t.replace(re, (a, p) => p + ' '.repeat(n)); } }
+  if (found.length < 2) for (const [re, c] of d.cities) { const m = t.match(re); if (m && !found.some(f => f.c === c)) found.push({c, i:m.index}); }
+  return found.sort((a, b) => a.i - b.i).map(f => f.c);
+}
+function rsShift(y, mo, d, off) { const dt = new Date(Date.UTC(y, mo - 1, d + off)); return dt.getUTCFullYear() === y ? String(dt.getUTCMonth() + 1).padStart(2, '0') + String(dt.getUTCDate()).padStart(2, '0') : ''; }
+function rsMatch(g, d) {
+  const title = g.otitle || g.title, mo = g.omo != null ? g.omo : g.mo, dd = g.od != null ? g.od : g.d;
+  const codes = rsTeams(title, d), gn = +((title.match(/\bgame\s*(\d)\b/i) || [])[1] || 0);
+  const has = x => codes.every(c => x[2] === c || x[3] === c);
+  const typ = /world series/i.test(title) ? 'WS' : /\bnlcs\b|national league (championship|playoff)/i.test(title) ? 'NLLCS' : /\balcs\b|american league (championship|playoff)/i.test(title) ? 'ALLCS' : /\b(lcs|playoffs?)\b/i.test(title) ? 'LCS' : /\bnlds\b/i.test(title) ? 'NLDS' : /\balds\b/i.test(title) ? 'ALDS' : /all[\s-]?stars?\b/i.test(title) ? 'AS' : '';
+  const ofTyp = x => typ === 'LCS' ? /LCS$/.test(x[20]) : x[20] === typ;
+  let c = [];
+  if (typ === 'AS') { c = d.g.filter(x => x[20] === 'AS'); if (c.length > 1 && mo && dd) { const k = rsShift(d.y, mo, dd, 0), c2 = c.filter(x => x[0] === k); if (c2.length) c = c2; } }
+  else if (typ && gn && codes.length) c = d.g.filter(x => ofTyp(x) && x[21] === gn && has(x));
+  if (!c.length && codes.length && mo && dd) {
+    c = (d.byDate[rsShift(d.y, mo, dd, 0)] || []).filter(has);
+    for (let off = 1; !c.length && off <= 2; off++) c = [...(d.byDate[rsShift(d.y, mo, dd, off)] || []), ...(d.byDate[rsShift(d.y, mo, dd, -off)] || [])].filter(has);
+  }
+  if (c.length > 1 && gn) { const c2 = c.filter(x => x[1] === gn || (x[20] && x[21] === gn)); if (c2.length) c = c2; }
+  return c.length === 1 ? c[0] : null;
+}
+function rsTitle(x, d) {
+  const T = c => d.t[c][0];
+  if (x[20] === 'AS') return 'All-Star Game, ' + T(x[2]).replace(' All-Stars', '') + ' at ' + T(x[3]).replace(' All-Stars', '');
+  let s = T(x[2]) + ' at ' + T(x[3]);
+  if (x[20]) s += ' ' + RS_TYPE[x[20]] + (x[20] !== 'WC' ? ' Game ' + x[21] : '');
+  else if (x[1]) s += ' (Game ' + x[1] + ')';
+  return s;
+}
+function rsApply(g) {
+  if (!g || !g.y || g.kind === 'ad' || g.rsTried === RS_V) return false;
+  const d = S.rs[g.y]; if (!d) return false;
+  g.rsTried = RS_V;
+  const x = rsMatch(g, d); if (!x) return false;
+  if (g.otitle == null) { g.otitle = g.title; g.omo = g.mo; g.od = g.d; }
+  g.rs = x; g.mo = +x[0].slice(0, 2); g.d = +x[0].slice(2); g.title = rsTitle(x, d);
+  return true;
+}
+function rsYear(y) {
+  return rsLoad(y).then(d => {
+    if (!d) return false;
+    let ch = false;
+    for (const g of S.cat) if (g.y === y && rsApply(g)) ch = true;
+    if (ch) S.cat.sort((a, b) => (a.y - b.y) || (a.mo - b.mo) || (a.d - b.d) || a.title.localeCompare(b.title));
+    return ch;
+  });
+}
+function lineCells(s) { const out = []; for (let i = 0; i < s.length; i++) { if (s[i] === '(') { const j = s.indexOf(')', i); out.push(s.slice(i + 1, j)); i = j; } else out.push(s[i]); } return out; }
+function boxHtml(g) {
+  const x = g.rs, d = S.rs[g.y]; if (!x || !d) return '';
+  const T = c => d.t[c][0], P = d.p[x[6]] || [x[6], ''], nm = i => i >= 0 ? d.n[i] : '';
+  const facts = [P[0] + (P[1] ? ', ' + P[1] : ''), x[7] ? x[7].toLocaleString('en-US') + ' fans' : '', x[23] === 'D' ? 'day game' : x[23] === 'N' ? 'night game' : '', x[8] ? 'game took ' + Math.floor(x[8] / 60) + ':' + String(x[8] % 60).padStart(2, '0') : ''].filter(Boolean);
+  const sp = nm(x[18]) && nm(x[19]) ? '<p class="bline">Starters: <b>' + esc(nm(x[18])) + '</b> for the ' + esc(T(x[2])) + ', <b>' + esc(nm(x[19])) + '</b> for the ' + esc(T(x[3])) + '</p>' : '';
+  let fix = '';
+  if (g.otitle != null) {
+    const notes = [];
+    if (g.omo && (g.omo !== g.mo || g.od !== g.d)) notes.push('the upload is labeled ' + SHORT_MO[g.omo - 1] + ' ' + g.od + ', but this game was played ' + SHORT_MO[g.mo - 1] + ' ' + g.d);
+    const oc = rsTeams(g.otitle, d);
+    if (/\sat\s/i.test(g.otitle) && oc.length === 2 && oc[0] === x[3] && oc[1] === x[2]) notes.push('the upload has the home and road teams flipped');
+    if (notes.length) fix = '<p class="bfix">Corrected from Retrosheet: ' + esc(notes.join(', and ')) + '.</p>';
+  }
+  const shown = S.box[g.id];
+  let score = '';
+  if (shown) {
+    const v = lineCells(x[9]), h = lineCells(x[10]), n = Math.max(v.length, h.length, 9);
+    const cells = a => Array.from({length:n}, (_, i) => '<td>' + esc(a[i] != null ? a[i] : '') + '</td>').join('');
+    score = '<div class="lsw"><table class="ls"><tr><th></th>' + Array.from({length:n}, (_, i) => '<th>' + (i + 1) + '</th>').join('') + '<th class="rhe">R</th><th>H</th><th>E</th></tr>' +
+      '<tr><th>' + esc(T(x[2])) + '</th>' + cells(v) + '<td class="rhe">' + x[4] + '</td><td>' + x[11] + '</td><td>' + x[12] + '</td></tr>' +
+      '<tr><th>' + esc(T(x[3])) + '</th>' + cells(h) + '<td class="rhe">' + x[5] + '</td><td>' + x[13] + '</td><td>' + x[14] + '</td></tr></table></div>' +
+      '<p class="bline">Final: <b>' + esc((x[4] > x[5] ? T(x[2]) + ' ' + x[4] + ', ' + T(x[3]) + ' ' + x[5] : T(x[3]) + ' ' + x[5] + ', ' + T(x[2]) + ' ' + x[4])) + '</b>' + (n > 9 ? ' in ' + n + ' innings' : '') + '</p>' +
+      ([nm(x[15]) && 'Win: ' + nm(x[15]), nm(x[16]) && 'Loss: ' + nm(x[16]), nm(x[17]) && 'Save: ' + nm(x[17])].filter(Boolean).length ? '<p class="bline">' + esc([nm(x[15]) && 'Win: ' + nm(x[15]), nm(x[16]) && 'Loss: ' + nm(x[16]), nm(x[17]) && 'Save: ' + nm(x[17])].filter(Boolean).join(' · ')) + '</p>' : '');
+  }
+  return '<div class="cap">Box score</div><p class="bline">' + esc(facts.join(' · ')) + '</p>' + sp + fix +
+    (shown ? score + '<button class="addann" id="boxHide">Hide the score</button>' : '<button class="addann boxbtn" id="boxShow">Show the final score</button><span class="bnote">Hidden so it won’t spoil the game</span>') +
+    '<p class="credit">The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at <a href="https://www.retrosheet.org">www.retrosheet.org</a>.</p>';
+}
+function renderBox() {
+  const el = $('box'), g = S.cur;
+  const html = g && g.rs ? boxHtml(g) : '';
+  el.hidden = !html; el.innerHTML = html;
+  const sh = $('boxShow'), hd = $('boxHide');
+  if (sh) sh.onclick = () => { S.box[g.id] = 1; renderBox(); };
+  if (hd) hd.onclick = () => { delete S.box[g.id]; renderBox(); };
+}
+function rsForCur() {
+  const g = S.cur; renderBox();
+  if (!g || !g.y || g.kind === 'ad') return;
+  rsLoad(g.y).then(() => { if (S.cur !== g) return; if (rsApply(g)) { showNow(); render(true); } renderBox(); });
+}
 function showNow() {
   const g = S.cur; if (!g) return;
-  if (g.kind === 'ad') { $('nowStar').hidden = true; $('rDate').innerHTML = '<span class="onair"></span>Rain delay'; $('rTitle').textContent = 'A word from our sponsors'; $('rMeta').textContent = g.title + ' · the game picks back up when it ends'; return; }
+  if (g.kind === 'ad') { $('nowStar').hidden = true; $('rDate').innerHTML = '<span class="onair"></span>Rain delay'; $('rTitle').textContent = 'A word from our sponsors'; $('rMeta').textContent = g.title + ' · the game picks back up when it ends'; showNow.box = null; renderBox(); return; }
   $('rDate').innerHTML = '<span class="onair"></span>' + esc(g.kind === 'yt' ? (g.y ? 'FM · ' + g.y : 'FM · ' + (STATIONS.find(s => s.key === g.station) || {}).label) : fmtDate(g));
   $('rTitle').textContent = g.title;
   const anns = annsOf(g);
   $('rMeta').textContent = [g.col, anns.length ? anns.join(' & ') : ''].filter(Boolean).join(' · ');
-  showStar();
+  showStar(); if (showNow.box !== g.id) { showNow.box = g.id; rsForCur(); }
 }
 function media(g) {
   if (!('mediaSession' in navigator)) return;

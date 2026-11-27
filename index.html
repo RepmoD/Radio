@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;600&family=Limelight&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body class="off">
 <div class="wrap">
@@ -63,6 +63,7 @@
 
   <section class="log">
     <div class="callbar" id="callbar"></div>
+    <div class="box" id="box" hidden></div>
     <label class="slabel" for="q">Find a game</label>
     <form id="sform" class="annform" role="search">
       <input type="search" id="q" placeholder="Cardinals 1985, Buck, World Series…" autocomplete="off" enterkeyhint="search">
@@ -72,10 +73,11 @@
     <ol class="list" id="list"></ol>
     <div id="more"></div>
     <p class="foot">AM streams games from the <a href="https://archive.org/details/cbotrarchive">Internet Archive</a>, from the 1930s on, including Tigers, Blue Jays, Mariners and World Series radio. FM plays full-game radio uploads on YouTube from the Retro Sports Radio and Classic Baseball on the Radio channels. Tap ☆ to keep a game, ♡ to favor an announcer. Your spot in each game, stars and favorite announcers stay on this phone.</p>
+    <p class="foot credit">Box scores, dates and matchups come from Retrosheet. The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at <a href="https://www.retrosheet.org">www.retrosheet.org</a>.</p>
   </section>
 </div>
 <audio id="au" preload="none" playsinline></audio>
 <div class="toast" id="toast" hidden></div>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
